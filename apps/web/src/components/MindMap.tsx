@@ -29,10 +29,16 @@ export default function MindMap() {
   const setMultiSelectedIds = useProjectStore((s) => s.setMultiSelectedIds);
   const focusNodeId = useProjectStore((s) => s.focusNodeId);
   const setFocusNodeId = useProjectStore((s) => s.setFocusNodeId);
+  const filterPriority = useProjectStore((s) => s.filterPriority);
+  const filterStatus = useProjectStore((s) => s.filterStatus);
+  const filterType = useProjectStore((s) => s.filterType);
+  const filterTagIds = useProjectStore((s) => s.filterTagIds);
   const reactFlow = useReactFlow();
   const prevNodeCount = useRef(0);
 
   const internalNodes = useRef<Node[]>([]);
+
+  const hasActiveFilters = filterPriority.length > 0 || filterStatus.length > 0 || filterType.length > 0 || filterTagIds.length > 0;
 
   const flowNodes: Node[] = useMemo(() => {
     let visible = nodes;
@@ -43,33 +49,60 @@ export default function MindMap() {
       visible = nodes.filter((n) => allowed.has(n.id));
     }
 
-    const result = visible.map((n) => ({
-      id: n.id,
-      type: 'task' as const,
-      position: { x: n.position_x, y: n.position_y },
-      data: {
-        title: n.title,
-        status: n.status,
-        hasNotes: n.notes.length > 0,
-        isSelected: n.id === selectedNodeId || multiSelectedIds.includes(n.id),
-      },
-    }));
+    const result = visible.map((n) => {
+      let filteredOut = false;
+      if (hasActiveFilters) {
+        if (filterPriority.length > 0 && !filterPriority.includes(n.priority)) filteredOut = true;
+        if (filterStatus.length > 0 && !filterStatus.includes(n.status)) filteredOut = true;
+        if (filterType.length > 0 && !filterType.includes(n.node_type)) filteredOut = true;
+      }
+
+      return {
+        id: n.id,
+        type: 'task' as const,
+        position: { x: n.position_x, y: n.position_y },
+        data: {
+          title: n.title,
+          status: n.status,
+          hasNotes: n.notes.length > 0,
+          isSelected: n.id === selectedNodeId || multiSelectedIds.includes(n.id),
+          priority: n.priority,
+          node_type: n.node_type,
+          progress: n.progress,
+          due_date: n.due_date,
+          filteredOut,
+        },
+      };
+    });
 
     internalNodes.current = result;
     return result;
-  }, [nodes, focusNodeId, selectedNodeId]);
+  }, [nodes, focusNodeId, selectedNodeId, hasActiveFilters, filterPriority, filterStatus, filterType, filterTagIds]);
 
   // All tree edges use LabeledEdge — supports double-click to add label
   const flowEdges: Edge[] = useMemo(() => {
     return nodes
       .filter((n) => n.parent_id !== null)
-      .map((n) => ({
-        id: `e-${n.parent_id}-${n.id}`,
-        source: n.parent_id!,
-        target: n.id,
-        type: 'labeled',
-      }));
-  }, [nodes]);
+      .map((n) => {
+        const sourceFiltered = hasActiveFilters && (
+          (filterPriority.length > 0 && !filterPriority.includes(nodes.find(p => p.id === n.parent_id)?.priority ?? '')) ||
+          (filterStatus.length > 0 && !filterStatus.includes(nodes.find(p => p.id === n.parent_id)?.status ?? '')) ||
+          (filterType.length > 0 && !filterType.includes(nodes.find(p => p.id === n.parent_id)?.node_type ?? ''))
+        );
+        const targetFiltered = hasActiveFilters && (
+          (filterPriority.length > 0 && !filterPriority.includes(n.priority)) ||
+          (filterStatus.length > 0 && !filterStatus.includes(n.status)) ||
+          (filterType.length > 0 && !filterType.includes(n.node_type))
+        );
+        return {
+          id: `e-${n.parent_id}-${n.id}`,
+          source: n.parent_id!,
+          target: n.id,
+          type: 'labeled',
+          style: (sourceFiltered || targetFiltered) ? { opacity: 0.15 } : undefined,
+        };
+      });
+  }, [nodes, hasActiveFilters, filterPriority, filterStatus, filterType]);
 
   useEffect(() => {
     if (nodes.length > 0 && prevNodeCount.current === 0) {

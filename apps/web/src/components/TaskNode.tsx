@@ -1,6 +1,6 @@
 import { memo, useRef, useEffect, useState, useCallback } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import type { NodeStatus } from '@tasktree/shared';
+import type { NodeStatus, NodePriority, NodeType } from '@tasktree/shared';
 import { useProjectStore } from '../store/projectStore';
 import { api } from '../lib/api';
 
@@ -18,11 +18,31 @@ const statusDot: Record<NodeStatus, string> = {
   dropped: 'bg-red-500',
 };
 
+const priorityBadge: Record<NodePriority, { bg: string; label: string }> = {
+  p0: { bg: 'bg-red-500', label: 'P0' },
+  p1: { bg: 'bg-orange-500', label: 'P1' },
+  p2: { bg: 'bg-gray-600', label: 'P2' },
+  p3: { bg: 'bg-gray-700', label: 'P3' },
+};
+
+const typeIcons: Record<NodeType, string> = {
+  task: '',
+  milestone: '\u25C6',
+  group: '\u229E',
+  decision: '\u25C8',
+  note: '\u270E',
+};
+
 export interface TaskNodeData {
   title: string;
   status: NodeStatus;
   hasNotes: boolean;
   isSelected: boolean;
+  priority: NodePriority;
+  node_type: NodeType;
+  progress: number;
+  due_date: string | null;
+  filteredOut: boolean;
 }
 
 export type TaskNodeProps = {
@@ -40,14 +60,10 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
   const [editTitle, setEditTitle] = useState(data.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync title from data when not editing
   useEffect(() => {
-    if (!isEditing) {
-      setEditTitle(data.title);
-    }
+    if (!isEditing) setEditTitle(data.title);
   }, [data.title, isEditing]);
 
-  // Auto-focus and select when entering edit mode
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -57,41 +73,51 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
 
   const saveTitle = useCallback(async () => {
     const trimmed = editTitle.trim();
-    if (!trimmed) {
-      setEditTitle(data.title);
-      return;
-    }
+    if (!trimmed) { setEditTitle(data.title); return; }
     if (trimmed === data.title) return;
     await api.updateNode(id, { title: trimmed });
     setNodes(nodes.map((n) => (n.id === id ? { ...n, title: trimmed } : n)));
   }, [editTitle, data.title, id, nodes, setNodes]);
 
-  const handleBlur = useCallback(() => {
-    saveTitle();
-    setEditingNodeId(null);
-  }, [saveTitle, setEditingNodeId]);
+  const handleBlur = useCallback(() => { saveTitle(); setEditingNodeId(null); }, [saveTitle, setEditingNodeId]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      setEditTitle(data.title);
-      setEditingNodeId(null);
-      return;
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      // Save and exit edit mode — do NOT create sibling
-      saveTitle().then(() => {
-        setEditingNodeId(null);
-      });
-    }
+    if (e.key === 'Escape') { setEditTitle(data.title); setEditingNodeId(null); return; }
+    if (e.key === 'Enter') { e.preventDefault(); saveTitle().then(() => setEditingNodeId(null)); }
   }, [data.title, setEditingNodeId, saveTitle]);
+
+  const showPriority = data.priority !== 'p2';
+  const showProgress = data.progress > 0;
+  const showDueDate = data.due_date;
+  const showTypeIcon = data.node_type !== 'task';
+  const p = priorityBadge[data.priority];
+
+  const isOverdue = showDueDate && new Date(data.due_date!) < new Date() && data.status !== 'done';
 
   return (
     <div
-      className={`px-3 py-2 rounded-lg border-2 max-w-[260px] ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''}`}
+      className={`px-3 py-2 rounded-lg border-2 max-w-[280px] transition-opacity duration-200 ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''} ${data.filteredOut ? 'opacity-20' : ''}`}
     >
       <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
 
+      {/* Top row: badges */}
+      {(showPriority || showTypeIcon || showDueDate) && (
+        <div className="flex items-center gap-1 mb-1 flex-wrap">
+          {showPriority && (
+            <span className={`${p.bg} text-white text-[10px] font-bold px-1.5 py-0 rounded`}>{p.label}</span>
+          )}
+          {showTypeIcon && (
+            <span className="text-gray-400 text-xs">{typeIcons[data.node_type]}</span>
+          )}
+          {showDueDate && (
+            <span className={`text-[10px] px-1.5 py-0 rounded ${isOverdue ? 'bg-red-900 text-red-300' : 'bg-gray-700 text-gray-400'}`}>
+              {data.due_date!.slice(5)}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Title row */}
       <div className="flex items-center gap-2">
         <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusDot[data.status]}`} />
         {isEditing ? (
@@ -108,6 +134,19 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
         )}
         {data.hasNotes && !isEditing && <span className="text-gray-500 text-xs ml-1">&#9998;</span>}
       </div>
+
+      {/* Progress bar */}
+      {showProgress && (
+        <div className="mt-1.5 flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${data.progress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+              style={{ width: `${data.progress}%` }}
+            />
+          </div>
+          <span className="text-[10px] text-gray-500 w-8 text-right">{data.progress}%</span>
+        </div>
+      )}
 
       <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
     </div>

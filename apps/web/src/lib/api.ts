@@ -8,6 +8,9 @@ import type {
   Edge,
   CreateEdgeBody,
   UpdateEdgeBody,
+  Tag,
+  CreateTagBody,
+  UpdateTagBody,
   AuthResponse,
   CaptchaResponse,
 } from '@tasktree/shared';
@@ -104,4 +107,26 @@ export const api = {
 
   deleteEdge: (id: string) =>
     request<{ ok: boolean }>(`/edges/${id}`, { method: 'DELETE' }),
+
+  // Tags
+  listTags: (projectId: string) =>
+    request<Tag[]>(`/tags/project/${projectId}`),
+
+  createTag: (body: CreateTagBody) =>
+    request<Tag>('/tags', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateTag: (id: string, body: UpdateTagBody) =>
+    request<Tag>(`/tags/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  deleteTag: (id: string) =>
+    request<{ ok: boolean }>(`/tags/${id}`, { method: 'DELETE' }),
+
+  tagNode: (nodeId: string, tagId: string) =>
+    request<{ ok: boolean }>(`/tags/node/${nodeId}`, {
+      method: 'POST',
+      body: JSON.stringify({ tag_id: tagId }),
+    }),
+
+  untagNode: (nodeId: string, tagId: string) =>
+    request<{ ok: boolean }>(`/tags/node/${nodeId}/${tagId}`, { method: 'DELETE' }),
 };

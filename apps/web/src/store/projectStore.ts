@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Project, Node, Edge } from '@tasktree/shared';
+import type { Project, Node, Edge, Tag } from '@tasktree/shared';
 
 interface ProjectStore {
   projects: Project[];
@@ -10,6 +10,8 @@ interface ProjectStore {
   setNodes: (nodes: Node[]) => void;
   customEdges: Edge[];
   setCustomEdges: (edges: Edge[]) => void;
+  tags: Tag[];
+  setTags: (tags: Tag[]) => void;
   selectedNodeId: string | null;
   setSelectedNodeId: (id: string | null) => void;
   editingNodeId: string | null;
@@ -24,6 +26,15 @@ interface ProjectStore {
   clipboardMode: 'cut' | null;
   setClipboard: (ids: string[], mode: 'cut') => void;
   clearClipboard: () => void;
+  // Filters
+  filterPriority: string[];
+  setFilterPriority: (priorities: string[]) => void;
+  filterStatus: string[];
+  setFilterStatus: (statuses: string[]) => void;
+  filterType: string[];
+  setFilterType: (types: string[]) => void;
+  filterTagIds: string[];
+  setFilterTagIds: (tagIds: string[]) => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -35,6 +46,8 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   setNodes: (nodes) => set({ nodes }),
   customEdges: [],
   setCustomEdges: (customEdges) => set({ customEdges }),
+  tags: [],
+  setTags: (tags) => set({ tags }),
   selectedNodeId: null,
   setSelectedNodeId: (selectedNodeId) => set({ selectedNodeId, multiSelectedIds: [] }),
   editingNodeId: null,
@@ -47,4 +60,12 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   clipboardMode: null,
   setClipboard: (clipboardIds, clipboardMode) => set({ clipboardIds, clipboardMode }),
   clearClipboard: () => set({ clipboardIds: [], clipboardMode: null }),
+  filterPriority: [],
+  setFilterPriority: (filterPriority) => set({ filterPriority }),
+  filterStatus: [],
+  setFilterStatus: (filterStatus) => set({ filterStatus }),
+  filterType: [],
+  setFilterType: (filterType) => set({ filterType }),
+  filterTagIds: [],
+  setFilterTagIds: (filterTagIds) => set({ filterTagIds }),
 }));

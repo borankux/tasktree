@@ -50,6 +50,25 @@ function cascadeUp(db: ReturnType<typeof getDb>, nodeId: string) {
 }
 
 /**
+ * Bottom-up progress cascade: recalculate parent progress as average of children.
+ * Leaf nodes keep their manually-set progress.
+ */
+function cascadeProgressUp(db: ReturnType<typeof getDb>, nodeId: string) {
+  const node = db.prepare('SELECT parent_id FROM nodes WHERE id = ?').get(nodeId) as { parent_id: string | null } | undefined;
+  if (!node || !node.parent_id) return;
+
+  const children = db.prepare('SELECT progress FROM nodes WHERE parent_id = ?').all(node.parent_id) as { progress: number }[];
+  if (children.length === 0) return;
+
+  const avg = Math.round(children.reduce((sum, c) => sum + c.progress, 0) / children.length);
+  const parent = db.prepare('SELECT progress FROM nodes WHERE id = ?').get(node.parent_id) as { progress: number } | undefined;
+  if (parent && parent.progress !== avg) {
+    db.prepare('UPDATE nodes SET progress = ? WHERE id = ?').run(avg, node.parent_id);
+    cascadeProgressUp(db, node.parent_id);
+  }
+}
+
+/**
  * Top-down cascade: when parent is dropped, drop all descendants.
  * Dropped only spreads downward by explicit user action.
  */
@@ -97,6 +116,7 @@ nodes.post('/', async (c) => {
       db.prepare('UPDATE nodes SET status = ? WHERE id = ?').run('active', body.parent_id);
       cascadeUp(db, body.parent_id);
     }
+    cascadeProgressUp(db, id);
   }
 
   const node = db.prepare('SELECT * FROM nodes WHERE id = ?').get(id);
@@ -139,6 +159,11 @@ nodes.patch('/:id', async (c) => {
       cascadeDown(db, nodeId);
     }
     cascadeUp(db, nodeId);
+  }
+
+  // Cascade progress up if progress was changed
+  if (body.progress !== undefined) {
+    cascadeProgressUp(db, nodeId);
   }
 
   // If moved to a new parent, cascade both old and new parent
@@ -190,6 +215,7 @@ nodes.delete('/:id', (c) => {
   // Re-evaluate parent status after deletion
   if (node?.parent_id) {
     cascadeUp(db, node.parent_id);
+    cascadeProgressUp(db, node.parent_id);
   }
   return c.json({ ok: true });
 });
