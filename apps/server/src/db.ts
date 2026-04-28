@@ -74,6 +74,57 @@ function migrate(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_nodes_project ON nodes(project_id);
     CREATE INDEX IF NOT EXISTS idx_nodes_parent ON nodes(parent_id);
     CREATE INDEX IF NOT EXISTS idx_edges_project ON edges(project_id);
+
+    CREATE TABLE IF NOT EXISTS tags (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '#6B7280',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(project_id, name)
+    );
+
+    CREATE TABLE IF NOT EXISTS node_tags (
+      node_id TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
+      tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (node_id, tag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS views (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      layout_config TEXT DEFAULT '{}',
+      is_default INTEGER DEFAULT 0,
+      sort_order INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(project_id, name)
+    );
+
+    CREATE TABLE IF NOT EXISTS view_nodes (
+      view_id TEXT NOT NULL REFERENCES views(id) ON DELETE CASCADE,
+      node_id TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
+      parent_id TEXT,
+      sort_order INTEGER,
+      position_x REAL,
+      position_y REAL,
+      edge_label TEXT,
+      PRIMARY KEY (view_id, node_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS filter_presets (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      config TEXT DEFAULT '{}',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_tags_project ON tags(project_id);
+    CREATE INDEX IF NOT EXISTS idx_node_tags_tag ON node_tags(tag_id);
+    CREATE INDEX IF NOT EXISTS idx_views_project ON views(project_id);
   `);
 
   // Step 2: Migration — add user_id to projects if missing (existing DB)
@@ -94,5 +145,26 @@ function migrate(db: Database.Database) {
     const hash = hashSync(ADMIN_USERNAME);
     db.prepare('INSERT OR IGNORE INTO users (id, username, password_hash) VALUES (?, ?, ?)')
       .run(ADMIN_ID, ADMIN_USERNAME, hash);
+  }
+
+  // Step 4: Add enrichment columns to nodes table
+  const nodeColumns = db.prepare("PRAGMA table_info(nodes)").all() as { name: string }[];
+  if (!nodeColumns.some(c => c.name === 'priority')) {
+    db.exec(`ALTER TABLE nodes ADD COLUMN priority TEXT NOT NULL DEFAULT 'p2' CHECK(priority IN ('p0','p1','p2','p3'))`);
+    db.exec(`ALTER TABLE nodes ADD COLUMN due_date TEXT`);
+    db.exec(`ALTER TABLE nodes ADD COLUMN assignee_id TEXT REFERENCES users(id)`);
+    db.exec(`ALTER TABLE nodes ADD COLUMN progress INTEGER NOT NULL DEFAULT 0 CHECK(progress BETWEEN 0 AND 100)`);
+    db.exec(`ALTER TABLE nodes ADD COLUMN node_type TEXT NOT NULL DEFAULT 'task' CHECK(node_type IN ('task','milestone','group','decision','note'))`);
+    db.exec(`ALTER TABLE nodes ADD COLUMN attachments TEXT NOT NULL DEFAULT '[]'`);
+
+    // Backfill: nodes with children → 'group', others stay 'task'
+    db.exec(`UPDATE nodes SET node_type = 'group' WHERE id IN (SELECT DISTINCT parent_id FROM nodes WHERE parent_id IS NOT NULL)`);
+  }
+
+  // Step 5: Add enrichment columns to edges table
+  const edgeColumns = db.prepare("PRAGMA table_info(edges)").all() as { name: string }[];
+  if (!edgeColumns.some(c => c.name === 'edge_type')) {
+    db.exec(`ALTER TABLE edges ADD COLUMN edge_type TEXT NOT NULL DEFAULT 'relates_to' CHECK(edge_type IN ('depends_on','blocks','relates_to','child_of'))`);
+    db.exec(`ALTER TABLE edges ADD COLUMN style TEXT NOT NULL DEFAULT '{}'`);
   }
 }

@@ -40,7 +40,8 @@ projects.get('/:id', (c) => {
 
   const nodes = db.prepare('SELECT * FROM nodes WHERE project_id = ? ORDER BY sort_order').all(c.req.param('id'));
   const edges = db.prepare('SELECT * FROM edges WHERE project_id = ?').all(c.req.param('id'));
-  return c.json({ ...project, nodes, edges } as ProjectWithNodes);
+  const tags = db.prepare('SELECT * FROM tags WHERE project_id = ?').all(c.req.param('id'));
+  return c.json({ ...project, nodes, edges, tags } as ProjectWithNodes);
 });
 
 projects.delete('/:id', (c) => {

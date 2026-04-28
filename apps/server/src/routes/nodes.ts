@@ -85,9 +85,10 @@ nodes.post('/', async (c) => {
   const posY = parent ? parent.position_y + (siblings.next_order * 120) : 0;
 
   db.prepare(
-    `INSERT INTO nodes (id, project_id, parent_id, title, position_x, position_y, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, body.project_id, body.parent_id, body.title, posX, posY, siblings.next_order);
+    `INSERT INTO nodes (id, project_id, parent_id, title, position_x, position_y, sort_order, priority, node_type, due_date)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, body.project_id, body.parent_id, body.title, posX, posY, siblings.next_order,
+    body.priority || 'p2', body.node_type || 'task', body.due_date ?? null);
 
   // If parent was done/dropped, reactivate it
   if (body.parent_id) {
@@ -120,6 +121,12 @@ nodes.patch('/:id', async (c) => {
   if (body.status !== undefined) { sets.push('status = ?'); values.push(body.status); }
   if (body.edge_label !== undefined) { sets.push('edge_label = ?'); values.push(body.edge_label); }
   if (body.parent_id !== undefined) { sets.push('parent_id = ?'); values.push(body.parent_id); }
+  if (body.priority !== undefined) { sets.push('priority = ?'); values.push(body.priority); }
+  if (body.due_date !== undefined) { sets.push('due_date = ?'); values.push(body.due_date); }
+  if (body.assignee_id !== undefined) { sets.push('assignee_id = ?'); values.push(body.assignee_id); }
+  if (body.progress !== undefined) { sets.push('progress = ?'); values.push(body.progress); }
+  if (body.node_type !== undefined) { sets.push('node_type = ?'); values.push(body.node_type); }
+  if (body.attachments !== undefined) { sets.push('attachments = ?'); values.push(body.attachments); }
 
   if (sets.length === 0) return c.json({ error: 'No fields to update' }, 400);
 

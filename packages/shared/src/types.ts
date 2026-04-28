@@ -1,4 +1,7 @@
 export type NodeStatus = 'pending' | 'active' | 'done' | 'dropped';
+export type NodePriority = 'p0' | 'p1' | 'p2' | 'p3';
+export type NodeType = 'task' | 'milestone' | 'group' | 'decision' | 'note';
+export type EdgeType = 'depends_on' | 'blocks' | 'relates_to' | 'child_of';
 
 export interface User {
   id: string;
@@ -25,11 +28,18 @@ export interface Node {
   sort_order: number;
   edge_label: string;
   created_at: string;
+  priority: NodePriority;
+  due_date: string | null;
+  assignee_id: string | null;
+  progress: number;
+  node_type: NodeType;
+  attachments: string;
 }
 
 export interface ProjectWithNodes extends Project {
   nodes: Node[];
   edges: Edge[];
+  tags: Tag[];
 }
 
 export interface Edge {
@@ -39,6 +49,8 @@ export interface Edge {
   target_id: string;
   label: string;
   created_at: string;
+  edge_type: EdgeType;
+  style: string;
 }
 
 export interface CreateEdgeBody {
@@ -46,10 +58,14 @@ export interface CreateEdgeBody {
   source_id: string;
   target_id: string;
   label?: string;
+  edge_type?: EdgeType;
+  style?: string;
 }
 
 export interface UpdateEdgeBody {
   label?: string;
+  edge_type?: EdgeType;
+  style?: string;
 }
 
 export interface CreateProjectBody {
@@ -60,6 +76,9 @@ export interface CreateNodeBody {
   project_id: string;
   parent_id: string | null;
   title: string;
+  priority?: NodePriority;
+  node_type?: NodeType;
+  due_date?: string | null;
 }
 
 export interface UpdateNodeBody {
@@ -68,6 +87,12 @@ export interface UpdateNodeBody {
   status?: NodeStatus;
   edge_label?: string;
   parent_id?: string | null;
+  priority?: NodePriority;
+  node_type?: NodeType;
+  due_date?: string | null;
+  assignee_id?: string | null;
+  progress?: number;
+  attachments?: string;
 }
 
 export interface UpdatePositionBody {
@@ -100,4 +125,27 @@ export interface CaptchaResponse {
   captcha_id: string;
   svg: string;
   required: boolean;
+}
+
+export interface Tag {
+  id: string;
+  project_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+export interface CreateTagBody {
+  project_id: string;
+  name: string;
+  color?: string;
+}
+
+export interface UpdateTagBody {
+  name?: string;
+  color?: string;
+}
+
+export interface NodeTagBody {
+  tag_id: string;
 }
