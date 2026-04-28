@@ -33,9 +33,10 @@ export default function Canvas() {
     if (!id) return;
 
     api.getProject(id).then((data) => {
-      const { nodes, ...project } = data;
+      const projectNodes = data.nodes;
+      const { nodes: _, ...project } = data;
       setCurrentProject(project);
-      setNodes(nodes);
+      setNodes(projectNodes);
     });
 
     return () => {

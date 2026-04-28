@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
+  useReactFlow,
   type Node,
   type Edge,
   type OnNodesChange,
@@ -24,6 +25,16 @@ export default function MindMap() {
   const setSelectedNodeId = useProjectStore((s) => s.setSelectedNodeId);
   const focusNodeId = useProjectStore((s) => s.focusNodeId);
   const setFocusNodeId = useProjectStore((s) => s.setFocusNodeId);
+  const { fitView } = useReactFlow();
+  const prevNodeCount = useRef(0);
+
+  // Re-fit view when nodes first load
+  useEffect(() => {
+    if (nodes.length > 0 && prevNodeCount.current === 0) {
+      setTimeout(() => fitView({ padding: 0.2 }), 100);
+    }
+    prevNodeCount.current = nodes.length;
+  }, [nodes.length, fitView]);
 
   const flowNodes: Node<TaskNodeData>[] = useMemo(() => {
     let visible = nodes;
