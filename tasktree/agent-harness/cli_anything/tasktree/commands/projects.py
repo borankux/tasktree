@@ -54,6 +54,7 @@ def create_project(name: str, as_json: bool):
 def get_project(project_id: str, as_json: bool, fmt: str):
     """Show project details and node tree."""
     client = Client()
+    project_id = client.resolve_project(project_id)
     resp = client.get(f"/api/projects/{project_id}")
     if resp.status_code == 404:
         raise click.ClickException(f"Project {project_id} not found.")
@@ -91,9 +92,10 @@ def get_project(project_id: str, as_json: bool, fmt: str):
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation")
 def delete_project(project_id: str, yes: bool):
     """Delete a project and all its nodes."""
+    client = Client()
+    project_id = client.resolve_project(project_id)
     if not yes:
         click.confirm(f"Delete project {project_id}?", abort=True)
-    client = Client()
     resp = client.delete(f"/api/projects/{project_id}")
     if resp.status_code == 404:
         raise click.ClickException(f"Project {project_id} not found.")

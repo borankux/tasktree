@@ -10,6 +10,7 @@ from cli_anything.tasktree.formatters import format_json, format_project_tree
 def tree_cmd(project_id, as_json):
     """Display project as a text tree."""
     client = Client()
+    project_id = client.resolve_project(project_id)
     resp = client.get(f"/api/projects/{project_id}")
     resp.raise_for_status()
     data = resp.json()

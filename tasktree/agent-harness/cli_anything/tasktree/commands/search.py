@@ -11,6 +11,7 @@ from cli_anything.tasktree.formatters import format_json, format_node_path
 def search_cmd(project_id, query, as_json):
     """Search nodes by title or notes."""
     client = Client()
+    project_id = client.resolve_project(project_id)
     resp = client.get(f"/api/projects/{project_id}")
     resp.raise_for_status()
     data = resp.json()

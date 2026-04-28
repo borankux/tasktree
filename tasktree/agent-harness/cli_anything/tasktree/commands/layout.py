@@ -12,6 +12,7 @@ from cli_anything.tasktree.formatters import format_json, format_project_tree
 def layout_cmd(project_id: str, as_json: bool):
     """Recalculate tree layout for a project."""
     client = Client()
+    project_id = client.resolve_project(project_id)
     resp = client.post(f"/api/projects/{project_id}/layout")
     if resp.status_code == 404:
         raise click.ClickException(f"Project {project_id} not found.")

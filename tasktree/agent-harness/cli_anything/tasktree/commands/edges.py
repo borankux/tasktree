@@ -17,6 +17,7 @@ def edges_group():
 def list_edges(project: str, as_json: bool):
     """List custom edges in a project."""
     client = Client()
+    project = client.resolve_project(project)
     resp = client.get(f"/api/projects/{project}")
     if resp.status_code == 404:
         raise click.ClickException(f"Project {project} not found.")
@@ -53,6 +54,7 @@ def list_edges(project: str, as_json: bool):
 def create_edge(project: str, source: str, target: str, label: str, as_json: bool):
     """Create a custom edge between two nodes."""
     client = Client()
+    project = client.resolve_project(project)
     resp = client.post(
         "/api/edges",
         json={

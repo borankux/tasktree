@@ -25,6 +25,7 @@ def nodes_group():
 def list_nodes(project: str, as_json: bool):
     """List all nodes in a project."""
     client = Client()
+    project = client.resolve_project(project)
     resp = client.get(f"/api/projects/{project}")
     if resp.status_code == 404:
         raise click.ClickException(f"Project {project} not found.")
@@ -60,6 +61,7 @@ def list_nodes(project: str, as_json: bool):
 def create_node(project: str, title: str, parent: str | None, as_json: bool):
     """Create a new node."""
     client = Client()
+    project = client.resolve_project(project)
     body = {
         "project_id": project,
         "title": title,
