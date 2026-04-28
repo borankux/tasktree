@@ -11,6 +11,10 @@ import type {
   Tag,
   CreateTagBody,
   UpdateTagBody,
+  View,
+  CreateViewBody,
+  UpdateViewBody,
+  AutoGenViewBody,
   AuthResponse,
   CaptchaResponse,
 } from '@tasktree/shared';
@@ -129,4 +133,29 @@ export const api = {
 
   untagNode: (nodeId: string, tagId: string) =>
     request<{ ok: boolean }>(`/tags/node/${nodeId}/${tagId}`, { method: 'DELETE' }),
+
+  // Views
+  listViews: (projectId: string) =>
+    request<View[]>(`/views/project/${projectId}`),
+
+  getView: (id: string) =>
+    request<View & { view_nodes: any[] }>(`/views/${id}`),
+
+  createView: (body: CreateViewBody) =>
+    request<View>('/views', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateView: (id: string, body: UpdateViewBody) =>
+    request<View>(`/views/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  deleteView: (id: string) =>
+    request<{ ok: boolean }>(`/views/${id}`, { method: 'DELETE' }),
+
+  saveViewNodes: (viewId: string, nodes: any[]) =>
+    request<{ ok: boolean }>(`/views/${viewId}/nodes`, {
+      method: 'POST',
+      body: JSON.stringify({ nodes }),
+    }),
+
+  autoGenView: (body: AutoGenViewBody) =>
+    request<View>('/views/auto-generate', { method: 'POST', body: JSON.stringify(body) }),
 };

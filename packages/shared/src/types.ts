@@ -40,6 +40,7 @@ export interface ProjectWithNodes extends Project {
   nodes: Node[];
   edges: Edge[];
   tags: Tag[];
+  views: View[];
 }
 
 export interface Edge {
@@ -148,4 +149,45 @@ export interface UpdateTagBody {
 
 export interface NodeTagBody {
   tag_id: string;
+}
+
+// View types
+export interface View {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string;
+  layout_config: string;
+  is_default: number;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface ViewNode {
+  view_id: string;
+  node_id: string;
+  parent_id: string | null;
+  sort_order: number | null;
+  position_x: number | null;
+  position_y: number | null;
+  edge_label: string | null;
+}
+
+export interface CreateViewBody {
+  project_id: string;
+  name: string;
+  description?: string;
+  layout_config?: string;
+}
+
+export interface UpdateViewBody {
+  name?: string;
+  description?: string;
+  layout_config?: string;
+}
+
+export interface AutoGenViewBody {
+  project_id: string;
+  group_by: 'priority' | 'status' | 'node_type';
+  name?: string;
 }

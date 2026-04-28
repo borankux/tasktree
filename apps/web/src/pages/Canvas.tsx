@@ -132,16 +132,18 @@ export default function Canvas() {
   const setNodes = useProjectStore((s) => s.setNodes);
   const setCustomEdges = useProjectStore((s) => s.setCustomEdges);
   const setTags = useProjectStore((s) => s.setTags);
+  const setViews = useProjectStore((s) => s.setViews);
 
   useEffect(() => {
     if (!id) return;
 
     api.getProject(id).then((data) => {
-      const { nodes: _, edges: __, tags: ___, ...project } = data;
+      const { nodes: _, edges: __, tags: ___, views: ____, ...project } = data;
       setCurrentProject(project);
       setNodes(data.nodes);
       setCustomEdges(data.edges ?? []);
       setTags(data.tags ?? []);
+      setViews(data.views ?? []);
     });
 
     return () => {
@@ -149,8 +151,9 @@ export default function Canvas() {
       setNodes([]);
       setCustomEdges([]);
       setTags([]);
+      setViews([]);
     };
-  }, [id, setCurrentProject, setNodes, setCustomEdges, setTags]);
+  }, [id, setCurrentProject, setNodes, setCustomEdges, setTags, setViews]);
 
   return (
     <ReactFlowProvider>

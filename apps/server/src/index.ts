@@ -9,6 +9,7 @@ import nodes from './routes/nodes.js';
 import layout from './routes/layout.js';
 import edges from './routes/edges.js';
 import tags from './routes/tags.js';
+import viewRoutes from './routes/views.js';
 
 // Initialize DB on startup
 getDb();
@@ -24,12 +25,14 @@ app.use('/api/projects/*', authMiddleware);
 app.use('/api/nodes/*', authMiddleware);
 app.use('/api/edges/*', authMiddleware);
 app.use('/api/tags/*', authMiddleware);
+app.use('/api/views/*', authMiddleware);
 
 app.route('/api/projects', projects);
 app.route('/api/nodes', nodes);
 app.route('/api/projects', layout);
 app.route('/api/edges', edges);
 app.route('/api/tags', tags);
+app.route('/api/views', viewRoutes);
 
 const port = Number(process.env.PORT) || 3001;
 serve({ fetch: app.fetch, port }, (info) => {

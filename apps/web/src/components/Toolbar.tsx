@@ -3,6 +3,7 @@ import { useLayout } from '../hooks/useLayout';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import FilterBar from './FilterBar';
+import ViewSwitcher from './ViewSwitcher';
 
 export default function Toolbar() {
   const navigate = useNavigate();
@@ -112,8 +113,10 @@ export default function Toolbar() {
 
         <kbd className="text-[10px] text-gray-500 bg-gray-700 px-1.5 py-0.5 rounded cursor-default">Cmd+K</kbd>
       </div>
-      <div className="h-8 flex items-center px-4 border-t border-gray-700/50">
+      <div className="h-8 flex items-center px-4 border-t border-gray-700/50 gap-4">
         <FilterBar />
+        <div className="h-4 w-px bg-gray-700" />
+        <ViewSwitcher />
       </div>
     </div>
   );

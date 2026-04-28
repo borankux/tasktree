@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Project, Node, Edge, Tag } from '@tasktree/shared';
+import type { Project, Node, Edge, Tag, View } from '@tasktree/shared';
 
 interface ProjectStore {
   projects: Project[];
@@ -44,6 +44,11 @@ interface ProjectStore {
   // Search
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  // Views
+  views: View[];
+  setViews: (views: View[]) => void;
+  activeViewId: string | null;
+  setActiveViewId: (id: string | null) => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -91,4 +96,8 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   }),
   searchQuery: '',
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  views: [],
+  setViews: (views) => set({ views }),
+  activeViewId: null,
+  setActiveViewId: (activeViewId) => set({ activeViewId }),
 }));
