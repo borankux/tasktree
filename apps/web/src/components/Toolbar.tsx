@@ -11,6 +11,10 @@ export default function Toolbar() {
   const nodes = useProjectStore((s) => s.nodes);
   const setFocusNodeId = useProjectStore((s) => s.setFocusNodeId);
   const focusNodeId = useProjectStore((s) => s.focusNodeId);
+  const searchQuery = useProjectStore((s) => s.searchQuery);
+  const setSearchQuery = useProjectStore((s) => s.setSearchQuery);
+  const hiddenEdgeTypes = useProjectStore((s) => s.hiddenEdgeTypes);
+  const toggleEdgeTypeVisibility = useProjectStore((s) => s.toggleEdgeTypeVisibility);
   const { autoLayout } = useLayout();
 
   const handleAddChild = async () => {
@@ -22,6 +26,12 @@ export default function Toolbar() {
     });
     useProjectStore.getState().setNodes([...nodes, newNode]);
   };
+
+  const edgeTypes = [
+    { type: 'depends_on', label: 'Dep', color: 'bg-red-500' },
+    { type: 'blocks', label: 'Blk', color: 'bg-orange-500' },
+    { type: 'relates_to', label: 'Rel', color: 'bg-gray-500' },
+  ];
 
   return (
     <div className="bg-gray-800 border-b border-gray-700 flex flex-col">
@@ -39,12 +49,48 @@ export default function Toolbar() {
 
         <div className="flex-1" />
 
+        {/* Search */}
+        <div className="relative">
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search..."
+            className="w-36 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:w-48 transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs"
+            >
+              &times;
+            </button>
+          )}
+        </div>
+
+        {/* Edge type toggles */}
+        <div className="flex items-center gap-1">
+          {edgeTypes.map(({ type, label, color }) => (
+            <button
+              key={type}
+              onClick={() => toggleEdgeTypeVisibility(type)}
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                hiddenEdgeTypes.has(type)
+                  ? 'bg-gray-900 text-gray-600 line-through'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${color}`} />
+              {label}
+            </button>
+          ))}
+        </div>
+
         {focusNodeId && (
           <button
             onClick={() => setFocusNodeId(null)}
             className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded"
           >
-            Esc: Back to overview
+            Esc: Overview
           </button>
         )}
 
@@ -52,7 +98,7 @@ export default function Toolbar() {
           onClick={autoLayout}
           className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded"
         >
-          Auto Layout
+          Layout
         </button>
 
         {selectedNodeId && (
@@ -60,9 +106,11 @@ export default function Toolbar() {
             onClick={handleAddChild}
             className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
           >
-            + Add Child (Tab)
+            + Child
           </button>
         )}
+
+        <kbd className="text-[10px] text-gray-500 bg-gray-700 px-1.5 py-0.5 rounded cursor-default">Cmd+K</kbd>
       </div>
       <div className="h-8 flex items-center px-4 border-t border-gray-700/50">
         <FilterBar />

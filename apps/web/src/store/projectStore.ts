@@ -35,6 +35,15 @@ interface ProjectStore {
   setFilterType: (types: string[]) => void;
   filterTagIds: string[];
   setFilterTagIds: (tagIds: string[]) => void;
+  // Collapse
+  collapsedNodeIds: Set<string>;
+  toggleCollapsed: (id: string) => void;
+  // Edge type visibility
+  hiddenEdgeTypes: Set<string>;
+  toggleEdgeTypeVisibility: (edgeType: string) => void;
+  // Search
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -68,4 +77,18 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   setFilterType: (filterType) => set({ filterType }),
   filterTagIds: [],
   setFilterTagIds: (filterTagIds) => set({ filterTagIds }),
+  collapsedNodeIds: new Set<string>(),
+  toggleCollapsed: (id) => set((s) => {
+    const next = new Set(s.collapsedNodeIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return { collapsedNodeIds: next };
+  }),
+  hiddenEdgeTypes: new Set<string>(),
+  toggleEdgeTypeVisibility: (edgeType) => set((s) => {
+    const next = new Set(s.hiddenEdgeTypes);
+    if (next.has(edgeType)) next.delete(edgeType); else next.add(edgeType);
+    return { hiddenEdgeTypes: next };
+  }),
+  searchQuery: '',
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
 }));

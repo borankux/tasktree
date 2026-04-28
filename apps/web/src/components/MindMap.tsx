@@ -3,6 +3,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  MiniMap,
   useReactFlow,
   type Node,
   type Edge,
@@ -33,12 +34,37 @@ export default function MindMap() {
   const filterStatus = useProjectStore((s) => s.filterStatus);
   const filterType = useProjectStore((s) => s.filterType);
   const filterTagIds = useProjectStore((s) => s.filterTagIds);
+  const collapsedNodeIds = useProjectStore((s) => s.collapsedNodeIds);
+  const searchQuery = useProjectStore((s) => s.searchQuery);
   const reactFlow = useReactFlow();
   const prevNodeCount = useRef(0);
 
   const internalNodes = useRef<Node[]>([]);
 
   const hasActiveFilters = filterPriority.length > 0 || filterStatus.length > 0 || filterType.length > 0 || filterTagIds.length > 0;
+
+  // Build set of collapsed descendants to exclude
+  const hiddenIds = useMemo(() => {
+    const hidden = new Set<string>();
+    for (const cid of collapsedNodeIds) {
+      const desc = getDescendantIds(nodes, cid);
+      desc.forEach((d) => hidden.add(d));
+    }
+    return hidden;
+  }, [nodes, collapsedNodeIds]);
+
+  // Search match set
+  const searchMatchIds = useMemo(() => {
+    if (!searchQuery.trim()) return new Set<string>();
+    const q = searchQuery.toLowerCase();
+    const matches = new Set<string>();
+    for (const n of nodes) {
+      if (n.title.toLowerCase().includes(q) || n.notes.toLowerCase().includes(q)) {
+        matches.add(n.id);
+      }
+    }
+    return matches;
+  }, [nodes, searchQuery]);
 
   const flowNodes: Node[] = useMemo(() => {
     let visible = nodes;
@@ -49,40 +75,51 @@ export default function MindMap() {
       visible = nodes.filter((n) => allowed.has(n.id));
     }
 
-    const result = visible.map((n) => {
-      let filteredOut = false;
-      if (hasActiveFilters) {
-        if (filterPriority.length > 0 && !filterPriority.includes(n.priority)) filteredOut = true;
-        if (filterStatus.length > 0 && !filterStatus.includes(n.status)) filteredOut = true;
-        if (filterType.length > 0 && !filterType.includes(n.node_type)) filteredOut = true;
-      }
+    const result = visible
+      .filter((n) => !hiddenIds.has(n.id))
+      .map((n) => {
+        let filteredOut = false;
+        if (hasActiveFilters) {
+          if (filterPriority.length > 0 && !filterPriority.includes(n.priority)) filteredOut = true;
+          if (filterStatus.length > 0 && !filterStatus.includes(n.status)) filteredOut = true;
+          if (filterType.length > 0 && !filterType.includes(n.node_type)) filteredOut = true;
+        }
 
-      return {
-        id: n.id,
-        type: 'task' as const,
-        position: { x: n.position_x, y: n.position_y },
-        data: {
-          title: n.title,
-          status: n.status,
-          hasNotes: n.notes.length > 0,
-          isSelected: n.id === selectedNodeId || multiSelectedIds.includes(n.id),
-          priority: n.priority,
-          node_type: n.node_type,
-          progress: n.progress,
-          due_date: n.due_date,
-          filteredOut,
-        },
-      };
-    });
+        const hasChildren = nodes.some((c) => c.parent_id === n.id);
+        const isCollapsed = collapsedNodeIds.has(n.id);
+        const isSearchMatch = searchMatchIds.has(n.id);
+        const isSearchDimmed = searchQuery.trim() && !isSearchMatch;
+
+        return {
+          id: n.id,
+          type: 'task' as const,
+          position: { x: n.position_x, y: n.position_y },
+          data: {
+            title: n.title,
+            status: n.status,
+            hasNotes: n.notes.length > 0,
+            isSelected: n.id === selectedNodeId || multiSelectedIds.includes(n.id),
+            priority: n.priority,
+            node_type: n.node_type,
+            progress: n.progress,
+            due_date: n.due_date,
+            filteredOut,
+            hasChildren,
+            isCollapsed,
+            isSearchMatch,
+            isSearchDimmed,
+          },
+        };
+      });
 
     internalNodes.current = result;
     return result;
-  }, [nodes, focusNodeId, selectedNodeId, hasActiveFilters, filterPriority, filterStatus, filterType, filterTagIds]);
+  }, [nodes, focusNodeId, selectedNodeId, hasActiveFilters, filterPriority, filterStatus, filterType, filterTagIds, hiddenIds, collapsedNodeIds, searchMatchIds, searchQuery]);
 
-  // All tree edges use LabeledEdge — supports double-click to add label
+  // All tree edges use LabeledEdge
   const flowEdges: Edge[] = useMemo(() => {
     return nodes
-      .filter((n) => n.parent_id !== null)
+      .filter((n) => n.parent_id !== null && !hiddenIds.has(n.id))
       .map((n) => {
         const sourceFiltered = hasActiveFilters && (
           (filterPriority.length > 0 && !filterPriority.includes(nodes.find(p => p.id === n.parent_id)?.priority ?? '')) ||
@@ -102,7 +139,7 @@ export default function MindMap() {
           style: (sourceFiltered || targetFiltered) ? { opacity: 0.15 } : undefined,
         };
       });
-  }, [nodes, hasActiveFilters, filterPriority, filterStatus, filterType]);
+  }, [nodes, hasActiveFilters, filterPriority, filterStatus, filterType, hiddenIds]);
 
   useEffect(() => {
     if (nodes.length > 0 && prevNodeCount.current === 0) {
@@ -117,7 +154,6 @@ export default function MindMap() {
         (c) => c.type === 'dimensions' || c.type === 'position'
       );
       if (filtered.length === 0) return;
-
       const updated = applyNodeChanges(filtered, internalNodes.current);
       internalNodes.current = updated;
     },
@@ -141,17 +177,14 @@ export default function MindMap() {
   const onNodeClick = useCallback(
     (evt: React.MouseEvent, node: Node) => {
       if (evt.ctrlKey || evt.metaKey) {
-        // Ctrl/Cmd+Click → focus subtree
         setFocusNodeId(node.id);
       } else if (evt.shiftKey) {
-        // Shift+Click → toggle multi-select
         setMultiSelectedIds(
           multiSelectedIds.includes(node.id)
             ? multiSelectedIds.filter((id) => id !== node.id)
             : [...multiSelectedIds, node.id]
         );
       } else {
-        // Regular click → single select
         setSelectedNodeId(node.id);
       }
     },
@@ -180,6 +213,15 @@ export default function MindMap() {
       >
         <Background color="#374151" gap={20} />
         <Controls className="!bg-gray-800 !border-gray-700" />
+        <MiniMap
+          nodeColor={(n) => {
+            if (n.data?.isSearchMatch) return '#fbbf24';
+            if (n.data?.isSelected) return '#60a5fa';
+            return '#4b5563';
+          }}
+          className="!bg-gray-800 !border-gray-700"
+          maskColor="rgba(0,0,0,0.7)"
+        />
       </ReactFlow>
     </div>
   );

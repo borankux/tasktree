@@ -43,6 +43,10 @@ export interface TaskNodeData {
   progress: number;
   due_date: string | null;
   filteredOut: boolean;
+  hasChildren: boolean;
+  isCollapsed: boolean;
+  isSearchMatch: boolean;
+  isSearchDimmed: boolean;
 }
 
 export type TaskNodeProps = {
@@ -55,6 +59,7 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
   const setEditingNodeId = useProjectStore((s) => s.setEditingNodeId);
   const nodes = useProjectStore((s) => s.nodes);
   const setNodes = useProjectStore((s) => s.setNodes);
+  const toggleCollapsed = useProjectStore((s) => s.toggleCollapsed);
   const isEditing = editingNodeId === id;
 
   const [editTitle, setEditTitle] = useState(data.title);
@@ -86,17 +91,28 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
     if (e.key === 'Enter') { e.preventDefault(); saveTitle().then(() => setEditingNodeId(null)); }
   }, [data.title, setEditingNodeId, saveTitle]);
 
+  const handleCollapseClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleCollapsed(id);
+  }, [id, toggleCollapsed]);
+
   const showPriority = data.priority !== 'p2';
   const showProgress = data.progress > 0;
   const showDueDate = data.due_date;
   const showTypeIcon = data.node_type !== 'task';
   const p = priorityBadge[data.priority];
-
   const isOverdue = showDueDate && new Date(data.due_date!) < new Date() && data.status !== 'done';
+
+  // Search highlight: gold ring pulse for matches, dim for non-matches
+  const searchClass = data.isSearchMatch
+    ? 'ring-2 ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.4)]'
+    : data.isSearchDimmed
+      ? 'opacity-30'
+      : '';
 
   return (
     <div
-      className={`px-3 py-2 rounded-lg border-2 max-w-[280px] transition-opacity duration-200 ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''} ${data.filteredOut ? 'opacity-20' : ''}`}
+      className={`px-3 py-2 rounded-lg border-2 max-w-[280px] transition-all duration-200 ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''} ${data.filteredOut ? 'opacity-20' : ''} ${searchClass}`}
     >
       <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
 
@@ -146,6 +162,17 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
           </div>
           <span className="text-[10px] text-gray-500 w-8 text-right">{data.progress}%</span>
         </div>
+      )}
+
+      {/* Collapse toggle arrow */}
+      {data.hasChildren && (
+        <button
+          onClick={handleCollapseClick}
+          className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-gray-400 hover:bg-gray-600 hover:text-white transition-colors z-10"
+          title={data.isCollapsed ? 'Expand children' : 'Collapse children'}
+        >
+          <span className={`text-[10px] transition-transform duration-200 ${data.isCollapsed ? '' : 'rotate-180'}`}>&#9660;</span>
+        </button>
       )}
 
       <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
