@@ -6,5 +6,6 @@
     "build": "pnpm -r run build",
     "server": "pnpm --filter @mindmap/server dev",
     "web": "pnpm --filter @mindmap/web dev"
-  }
+  },
+  "onlyBuiltDependencies": ["better-sqlite3", "esbuild"]
 }
