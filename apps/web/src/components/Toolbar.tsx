@@ -8,7 +8,6 @@ export default function Toolbar() {
   const currentProject = useProjectStore((s) => s.currentProject);
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
   const nodes = useProjectStore((s) => s.nodes);
-  const setSelectedNodeId = useProjectStore((s) => s.setSelectedNodeId);
   const setFocusNodeId = useProjectStore((s) => s.setFocusNodeId);
   const focusNodeId = useProjectStore((s) => s.focusNodeId);
   const { autoLayout } = useLayout();
@@ -59,7 +58,7 @@ export default function Toolbar() {
           onClick={handleAddChild}
           className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
         >
-          + Add Child (Enter)
+          + Add Child (Tab)
         </button>
       )}
     </div>

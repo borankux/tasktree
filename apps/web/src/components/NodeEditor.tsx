@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { api } from '../lib/api';
 import { useProjectStore } from '../store/projectStore';
-import type { NodeStatus } from '@mindmap/shared';
+import type { NodeStatus } from '@tasktree/shared';
 
 const statusOptions: { value: NodeStatus; label: string; color: string }[] = [
   { value: 'pending', label: 'Pending', color: 'bg-gray-500' },
@@ -14,10 +16,12 @@ export default function NodeEditor() {
   const nodes = useProjectStore((s) => s.nodes);
   const setNodes = useProjectStore((s) => s.setNodes);
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
+  const currentProject = useProjectStore((s) => s.currentProject);
 
   const node = nodes.find((n) => n.id === selectedNodeId);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
+  const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
     if (node) {
@@ -48,7 +52,13 @@ export default function NodeEditor() {
 
   const handleStatusChange = async (status: NodeStatus) => {
     await api.updateNode(node.id, { status });
-    setNodes(nodes.map((n) => (n.id === node.id ? { ...n, status } : n)));
+    // Re-fetch to pick up cascade changes
+    if (currentProject) {
+      const data = await api.getProject(currentProject.id);
+      setNodes(data.nodes);
+    } else {
+      setNodes(nodes.map((n) => (n.id === node.id ? { ...n, status } : n)));
+    }
   };
 
   const handleAddChild = async () => {
@@ -57,12 +67,29 @@ export default function NodeEditor() {
       parent_id: node.id,
       title: 'New task',
     });
-    setNodes([...nodes, newNode]);
+    // Re-fetch to pick up cascade changes (parent may have been reactivated)
+    if (currentProject) {
+      const data = await api.getProject(currentProject.id);
+      setNodes(data.nodes);
+    } else {
+      setNodes([...nodes, newNode]);
+    }
   };
 
   const handleDelete = async () => {
     await api.deleteNode(node.id);
     setNodes(nodes.filter((n) => n.id !== node.id));
+  };
+
+  const togglePreview = () => {
+    if (previewMode) {
+      // Switching back to edit mode
+      setPreviewMode(false);
+    } else {
+      // Switching to preview mode — save first
+      handleSaveNotes();
+      setPreviewMode(true);
+    }
   };
 
   return (
@@ -98,15 +125,31 @@ export default function NodeEditor() {
         </div>
       </div>
 
-      <div>
-        <label className="text-xs text-gray-500 uppercase tracking-wide">Notes</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          onBlur={handleSaveNotes}
-          rows={6}
-          className="w-full mt-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
-        />
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-gray-500 uppercase tracking-wide">Notes</label>
+          <button
+            onClick={togglePreview}
+            className="text-xs text-blue-400 hover:text-blue-300"
+          >
+            {previewMode ? 'Edit' : 'Preview'}
+          </button>
+        </div>
+
+        {previewMode ? (
+          <div className="mt-1 flex-1 overflow-y-auto bg-gray-900 border border-gray-700 rounded px-3 py-2 prose prose-invert prose-sm max-w-none">
+            <Markdown remarkPlugins={[remarkGfm]}>{notes || '*No notes yet*'}</Markdown>
+          </div>
+        ) : (
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={handleSaveNotes}
+            rows={8}
+            className="w-full mt-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-blue-500 resize-none"
+            placeholder="Write notes in markdown..."
+          />
+        )}
       </div>
 
       <div className="flex gap-2 mt-auto">

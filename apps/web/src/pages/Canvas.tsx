@@ -28,22 +28,24 @@ export default function Canvas() {
   const { id } = useParams<{ id: string }>();
   const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
   const setNodes = useProjectStore((s) => s.setNodes);
+  const setCustomEdges = useProjectStore((s) => s.setCustomEdges);
 
   useEffect(() => {
     if (!id) return;
 
     api.getProject(id).then((data) => {
-      const projectNodes = data.nodes;
-      const { nodes: _, ...project } = data;
+      const { nodes: _, edges: __, ...project } = data;
       setCurrentProject(project);
-      setNodes(projectNodes);
+      setNodes(data.nodes);
+      setCustomEdges(data.edges ?? []);
     });
 
     return () => {
       setCurrentProject(null);
       setNodes([]);
+      setCustomEdges([]);
     };
-  }, [id, setCurrentProject, setNodes]);
+  }, [id, setCurrentProject, setNodes, setCustomEdges]);
 
   return (
     <ReactFlowProvider>

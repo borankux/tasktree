@@ -1,5 +1,5 @@
 {
-  "name": "@mindmap/server",
+  "name": "@tasktree/server",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.0.0",
-    "@mindmap/shared": "workspace:*",
+    "@tasktree/shared": "workspace:*",
     "better-sqlite3": "^11.0.0",
     "elkjs": "^0.9.3",
     "hono": "^4.4.0",

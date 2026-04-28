@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useProjectStore } from '../store/projectStore';
-import type { Project } from '@mindmap/shared';
+import type { Project } from '@tasktree/shared';
 
 export default function ProjectList() {
   const navigate = useNavigate();

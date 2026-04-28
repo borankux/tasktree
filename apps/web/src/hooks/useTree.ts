@@ -1,4 +1,4 @@
-import type { Node } from '@mindmap/shared';
+import type { Node } from '@tasktree/shared';
 
 export interface TreeNode extends Node {
   children: TreeNode[];

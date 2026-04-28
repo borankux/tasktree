@@ -11,27 +11,30 @@ import {
   applyNodeChanges,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { TaskNode, type TaskNodeData } from './TaskNode';
+import { TaskNode } from './TaskNode';
+import { LabeledEdge } from './LabeledEdge';
 import { useProjectStore } from '../store/projectStore';
 import { api } from '../lib/api';
 import { getDescendantIds } from '../hooks/useTree';
 
 const nodeTypes = { task: TaskNode };
+const edgeTypes = { labeled: LabeledEdge };
 
 export default function MindMap() {
   const nodes = useProjectStore((s) => s.nodes);
   const setNodes = useProjectStore((s) => s.setNodes);
   const selectedNodeId = useProjectStore((s) => s.selectedNodeId);
   const setSelectedNodeId = useProjectStore((s) => s.setSelectedNodeId);
+  const multiSelectedIds = useProjectStore((s) => s.multiSelectedIds);
+  const setMultiSelectedIds = useProjectStore((s) => s.setMultiSelectedIds);
   const focusNodeId = useProjectStore((s) => s.focusNodeId);
   const setFocusNodeId = useProjectStore((s) => s.setFocusNodeId);
   const reactFlow = useReactFlow();
   const prevNodeCount = useRef(0);
 
-  // Track internal node state to avoid loop
-  const internalNodes = useRef<Node<TaskNodeData>[]>([]);
+  const internalNodes = useRef<Node[]>([]);
 
-  const flowNodes: Node<TaskNodeData>[] = useMemo(() => {
+  const flowNodes: Node[] = useMemo(() => {
     let visible = nodes;
 
     if (focusNodeId) {
@@ -48,7 +51,7 @@ export default function MindMap() {
         title: n.title,
         status: n.status,
         hasNotes: n.notes.length > 0,
-        isSelected: n.id === selectedNodeId,
+        isSelected: n.id === selectedNodeId || multiSelectedIds.includes(n.id),
       },
     }));
 
@@ -56,6 +59,7 @@ export default function MindMap() {
     return result;
   }, [nodes, focusNodeId, selectedNodeId]);
 
+  // All tree edges use LabeledEdge — supports double-click to add label
   const flowEdges: Edge[] = useMemo(() => {
     return nodes
       .filter((n) => n.parent_id !== null)
@@ -63,12 +67,10 @@ export default function MindMap() {
         id: `e-${n.parent_id}-${n.id}`,
         source: n.parent_id!,
         target: n.id,
-        type: 'smoothstep',
-        style: { stroke: '#4b5563', strokeWidth: 2 },
+        type: 'labeled',
       }));
   }, [nodes]);
 
-  // Re-fit view when nodes first load
   useEffect(() => {
     if (nodes.length > 0 && prevNodeCount.current === 0) {
       setTimeout(() => reactFlow.fitView({ padding: 0.2 }), 100);
@@ -76,9 +78,8 @@ export default function MindMap() {
     prevNodeCount.current = nodes.length;
   }, [nodes.length, reactFlow]);
 
-  const onNodesChange: OnNodesChange<TaskNodeData> = useCallback(
-    (changes: NodeChange<TaskNodeData>[]) => {
-      // Only apply dimension/position changes, ignore select changes (we handle that ourselves)
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes: NodeChange[]) => {
       const filtered = changes.filter(
         (c) => c.type === 'dimensions' || c.type === 'position'
       );
@@ -105,22 +106,29 @@ export default function MindMap() {
   );
 
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      setSelectedNodeId(node.id);
+    (evt: React.MouseEvent, node: Node) => {
+      if (evt.ctrlKey || evt.metaKey) {
+        // Ctrl/Cmd+Click → focus subtree
+        setFocusNodeId(node.id);
+      } else if (evt.shiftKey) {
+        // Shift+Click → toggle multi-select
+        setMultiSelectedIds(
+          multiSelectedIds.includes(node.id)
+            ? multiSelectedIds.filter((id) => id !== node.id)
+            : [...multiSelectedIds, node.id]
+        );
+      } else {
+        // Regular click → single select
+        setSelectedNodeId(node.id);
+      }
     },
-    [setSelectedNodeId]
-  );
-
-  const onNodeDoubleClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      setFocusNodeId(node.id);
-    },
-    [setFocusNodeId]
+    [setSelectedNodeId, setFocusNodeId, multiSelectedIds, setMultiSelectedIds]
   );
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
-  }, [setSelectedNodeId]);
+    setMultiSelectedIds([]);
+  }, [setSelectedNodeId, setMultiSelectedIds]);
 
   return (
     <div className="w-full h-full">
@@ -130,9 +138,9 @@ export default function MindMap() {
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
-        onNodeDoubleClick={onNodeDoubleClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         minZoom={0.1}
         maxZoom={2}
