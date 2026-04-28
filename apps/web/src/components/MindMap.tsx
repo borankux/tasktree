@@ -25,16 +25,11 @@ export default function MindMap() {
   const setSelectedNodeId = useProjectStore((s) => s.setSelectedNodeId);
   const focusNodeId = useProjectStore((s) => s.focusNodeId);
   const setFocusNodeId = useProjectStore((s) => s.setFocusNodeId);
-  const { fitView } = useReactFlow();
+  const reactFlow = useReactFlow();
   const prevNodeCount = useRef(0);
 
-  // Re-fit view when nodes first load
-  useEffect(() => {
-    if (nodes.length > 0 && prevNodeCount.current === 0) {
-      setTimeout(() => fitView({ padding: 0.2 }), 100);
-    }
-    prevNodeCount.current = nodes.length;
-  }, [nodes.length, fitView]);
+  // Track internal node state to avoid loop
+  const internalNodes = useRef<Node<TaskNodeData>[]>([]);
 
   const flowNodes: Node<TaskNodeData>[] = useMemo(() => {
     let visible = nodes;
@@ -45,9 +40,9 @@ export default function MindMap() {
       visible = nodes.filter((n) => allowed.has(n.id));
     }
 
-    return visible.map((n) => ({
+    const result = visible.map((n) => ({
       id: n.id,
-      type: 'task',
+      type: 'task' as const,
       position: { x: n.position_x, y: n.position_y },
       data: {
         title: n.title,
@@ -56,6 +51,9 @@ export default function MindMap() {
         isSelected: n.id === selectedNodeId,
       },
     }));
+
+    internalNodes.current = result;
+    return result;
   }, [nodes, focusNodeId, selectedNodeId]);
 
   const flowEdges: Edge[] = useMemo(() => {
@@ -70,24 +68,40 @@ export default function MindMap() {
       }));
   }, [nodes]);
 
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      const updated = applyNodeChanges(changes, flowNodes);
-      for (const change of changes) {
-        if (change.type === 'position' && change.position && change.id) {
-          api.updatePosition(change.id, change.position.x, change.position.y);
-        }
-      }
-      const updatedNodes = nodes.map((n) => {
-        const moved = updated.find((u) => u.id === n.id);
-        if (moved && moved.position) {
-          return { ...n, position_x: moved.position.x, position_y: moved.position.y };
-        }
-        return n;
-      });
-      setNodes(updatedNodes as typeof nodes);
+  // Re-fit view when nodes first load
+  useEffect(() => {
+    if (nodes.length > 0 && prevNodeCount.current === 0) {
+      setTimeout(() => reactFlow.fitView({ padding: 0.2 }), 100);
+    }
+    prevNodeCount.current = nodes.length;
+  }, [nodes.length, reactFlow]);
+
+  const onNodesChange: OnNodesChange<TaskNodeData> = useCallback(
+    (changes: NodeChange<TaskNodeData>[]) => {
+      // Only apply dimension/position changes, ignore select changes (we handle that ourselves)
+      const filtered = changes.filter(
+        (c) => c.type === 'dimensions' || c.type === 'position'
+      );
+      if (filtered.length === 0) return;
+
+      const updated = applyNodeChanges(filtered, internalNodes.current);
+      internalNodes.current = updated;
     },
-    [flowNodes, nodes, setNodes]
+    []
+  );
+
+  const onNodeDragStop = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      api.updatePosition(node.id, node.position.x, node.position.y);
+      setNodes(
+        nodes.map((n) =>
+          n.id === node.id
+            ? { ...n, position_x: node.position.x, position_y: node.position.y }
+            : n
+        )
+      );
+    },
+    [nodes, setNodes]
   );
 
   const onNodeClick = useCallback(
@@ -114,6 +128,7 @@ export default function MindMap() {
         nodes={flowNodes}
         edges={flowEdges}
         onNodesChange={onNodesChange}
+        onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onPaneClick={onPaneClick}

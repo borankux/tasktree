@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import type { NodeStatus } from '@mindmap/shared';
 
 const statusColors: Record<NodeStatus, string> = {
@@ -23,19 +23,22 @@ export interface TaskNodeData {
   isSelected: boolean;
 }
 
-function TaskNodeComponent({ data }: NodeProps) {
-  const d = data as unknown as TaskNodeData;
+export type TaskNodeProps = {
+  data: TaskNodeData;
+  id: string;
+};
 
+function TaskNodeComponent({ data }: TaskNodeProps) {
   return (
     <div
-      className={`px-4 py-3 rounded-lg border-2 min-w-[160px] max-w-[280px] ${statusColors[d.status]} ${d.isSelected ? 'ring-2 ring-blue-400' : ''}`}
+      className={`px-4 py-3 rounded-lg border-2 min-w-[160px] max-w-[280px] ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''}`}
     >
       <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2" />
 
       <div className="flex items-center gap-2">
-        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusDot[d.status]}`} />
-        <span className="text-sm font-medium text-white truncate">{d.title}</span>
-        {d.hasNotes && <span className="text-gray-500 text-xs ml-1">&#9998;</span>}
+        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusDot[data.status]}`} />
+        <span className="text-sm font-medium text-white truncate">{data.title}</span>
+        {data.hasNotes && <span className="text-gray-500 text-xs ml-1">&#9998;</span>}
       </div>
 
       <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2" />
