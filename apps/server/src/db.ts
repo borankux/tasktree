@@ -125,6 +125,18 @@ function migrate(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_tags_project ON tags(project_id);
     CREATE INDEX IF NOT EXISTS idx_node_tags_tag ON node_tags(tag_id);
     CREATE INDEX IF NOT EXISTS idx_views_project ON views(project_id);
+
+    CREATE TABLE IF NOT EXISTS snapshots (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      data TEXT NOT NULL DEFAULT '{}',
+      node_count INTEGER NOT NULL DEFAULT 0,
+      edge_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_snapshots_project ON snapshots(project_id);
   `);
 
   // Step 2: Migration — add user_id to projects if missing (existing DB)

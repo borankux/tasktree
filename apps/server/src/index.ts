@@ -10,6 +10,8 @@ import layout from './routes/layout.js';
 import edges from './routes/edges.js';
 import tags from './routes/tags.js';
 import viewRoutes from './routes/views.js';
+import snapshots from './routes/snapshots.js';
+import exportRoutes from './routes/export.js';
 
 // Initialize DB on startup
 getDb();
@@ -26,13 +28,16 @@ app.use('/api/nodes/*', authMiddleware);
 app.use('/api/edges/*', authMiddleware);
 app.use('/api/tags/*', authMiddleware);
 app.use('/api/views/*', authMiddleware);
+app.use('/api/snapshots/*', authMiddleware);
 
 app.route('/api/projects', projects);
 app.route('/api/nodes', nodes);
 app.route('/api/projects', layout);
+app.route('/api/projects', exportRoutes);
 app.route('/api/edges', edges);
 app.route('/api/tags', tags);
 app.route('/api/views', viewRoutes);
+app.route('/api/snapshots', snapshots);
 
 const port = Number(process.env.PORT) || 3001;
 serve({ fetch: app.fetch, port }, (info) => {

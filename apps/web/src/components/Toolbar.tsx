@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import FilterBar from './FilterBar';
 import ViewSwitcher from './ViewSwitcher';
+import { toPng } from 'html-to-image';
 
 export default function Toolbar() {
   const navigate = useNavigate();
@@ -33,6 +34,20 @@ export default function Toolbar() {
     { type: 'blocks', label: 'Blk', color: 'bg-orange-500' },
     { type: 'relates_to', label: 'Rel', color: 'bg-gray-500' },
   ];
+
+  const handleExportPng = async () => {
+    const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
+    if (!viewport) return;
+    try {
+      const dataUrl = await toPng(viewport, { backgroundColor: '#111827' });
+      const link = document.createElement('a');
+      link.download = `${currentProject?.name || 'tasktree'}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Export PNG failed:', err);
+    }
+  };
 
   return (
     <div className="bg-gray-800 border-b border-gray-700 flex flex-col">
@@ -100,6 +115,13 @@ export default function Toolbar() {
           className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded"
         >
           Layout
+        </button>
+
+        <button
+          onClick={handleExportPng}
+          className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded"
+        >
+          Export PNG
         </button>
 
         {selectedNodeId && (

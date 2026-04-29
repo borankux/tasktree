@@ -132,6 +132,31 @@ def _register_commands():
         cli.add_command(batch_cmd)
     except ImportError:
         pass
+    try:
+        from cli_anything.tasktree.commands.tags import tags_group
+        cli.add_command(tags_group)
+    except ImportError:
+        pass
+    try:
+        from cli_anything.tasktree.commands.views import views_group
+        cli.add_command(views_group)
+    except ImportError:
+        pass
+    try:
+        from cli_anything.tasktree.commands.snapshots import snapshots_group
+        cli.add_command(snapshots_group)
+    except ImportError:
+        pass
+    try:
+        from cli_anything.tasktree.commands.export import export_cmd
+        cli.add_command(export_cmd)
+    except ImportError:
+        pass
+    try:
+        from cli_anything.tasktree.commands.import_cmd import import_cmd
+        cli.add_command(import_cmd)
+    except ImportError:
+        pass
 
 
 _register_commands()

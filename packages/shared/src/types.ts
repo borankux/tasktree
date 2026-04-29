@@ -191,3 +191,27 @@ export interface AutoGenViewBody {
   group_by: 'priority' | 'status' | 'node_type';
   name?: string;
 }
+
+// Snapshot types
+export interface Snapshot {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string;
+  data: string;
+  node_count: number;
+  edge_count: number;
+  created_at: string;
+}
+
+export interface CreateSnapshotBody {
+  project_id: string;
+  name: string;
+  description?: string;
+}
+
+export interface SnapshotDiff {
+  added: Node[];
+  removed: Node[];
+  modified: { before: Node; after: Node }[];
+}
