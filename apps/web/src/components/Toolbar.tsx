@@ -17,7 +17,15 @@ export default function Toolbar() {
   const setSearchQuery = useProjectStore((s) => s.setSearchQuery);
   const hiddenEdgeTypes = useProjectStore((s) => s.hiddenEdgeTypes);
   const toggleEdgeTypeVisibility = useProjectStore((s) => s.toggleEdgeTypeVisibility);
+  const layoutDirection = useProjectStore((s) => s.layoutDirection);
+  const setLayoutDirection = useProjectStore((s) => s.setLayoutDirection);
   const { autoLayout } = useLayout();
+
+  const handleLayoutToggle = () => {
+    const next = layoutDirection === 'RIGHT' ? 'DOWN' : 'RIGHT';
+    setLayoutDirection(next);
+    // Auto-layout will pick up the new direction on next call
+  };
 
   const handleAddChild = async () => {
     if (!selectedNodeId || !currentProject) return;
@@ -110,12 +118,21 @@ export default function Toolbar() {
           </button>
         )}
 
-        <button
-          onClick={autoLayout}
-          className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded"
-        >
-          Layout
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleLayoutToggle}
+            className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded-l border-r border-gray-600"
+            title={layoutDirection === 'RIGHT' ? 'Switch to vertical' : 'Switch to horizontal'}
+          >
+            {layoutDirection === 'RIGHT' ? '→' : '↓'}
+          </button>
+          <button
+            onClick={autoLayout}
+            className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded-r"
+          >
+            Layout
+          </button>
+        </div>
 
         <button
           onClick={handleExportPng}

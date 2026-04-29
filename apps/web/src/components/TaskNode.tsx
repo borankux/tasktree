@@ -60,7 +60,12 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
   const nodes = useProjectStore((s) => s.nodes);
   const setNodes = useProjectStore((s) => s.setNodes);
   const toggleCollapsed = useProjectStore((s) => s.toggleCollapsed);
+  const layoutDirection = useProjectStore((s) => s.layoutDirection);
   const isEditing = editingNodeId === id;
+
+  const isVertical = layoutDirection === 'DOWN';
+  const targetPos = isVertical ? Position.Top : Position.Left;
+  const sourcePos = isVertical ? Position.Bottom : Position.Right;
 
   const [editTitle, setEditTitle] = useState(data.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -114,7 +119,7 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
     <div
       className={`px-3 py-2 rounded-lg border-2 max-w-[280px] min-w-[160px] transition-all duration-200 ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''} ${data.filteredOut ? 'opacity-20' : ''} ${searchClass}`}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
+      <Handle type="target" position={targetPos} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
 
       {/* Top row: badges */}
       {(showPriority || showTypeIcon || showDueDate) && (
@@ -175,7 +180,7 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
         </button>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
+      <Handle type="source" position={sourcePos} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
     </div>
   );
 }

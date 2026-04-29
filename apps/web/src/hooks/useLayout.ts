@@ -5,12 +5,13 @@ import { useProjectStore } from '../store/projectStore';
 export function useLayout() {
   const setNodes = useProjectStore((s) => s.setNodes);
   const currentProject = useProjectStore((s) => s.currentProject);
+  const layoutDirection = useProjectStore((s) => s.layoutDirection);
 
   const autoLayout = useCallback(async () => {
     if (!currentProject) return;
-    const nodes = await api.layoutProject(currentProject.id);
+    const nodes = await api.layoutProject(currentProject.id, layoutDirection);
     setNodes(nodes);
-  }, [currentProject, setNodes]);
+  }, [currentProject, setNodes, layoutDirection]);
 
   return { autoLayout };
 }

@@ -49,6 +49,9 @@ interface ProjectStore {
   setViews: (views: View[]) => void;
   activeViewId: string | null;
   setActiveViewId: (id: string | null) => void;
+  // Layout direction
+  layoutDirection: 'RIGHT' | 'DOWN';
+  setLayoutDirection: (dir: 'RIGHT' | 'DOWN') => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -100,4 +103,6 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   setViews: (views) => set({ views }),
   activeViewId: null,
   setActiveViewId: (activeViewId) => set({ activeViewId }),
+  layoutDirection: 'RIGHT',
+  setLayoutDirection: (layoutDirection) => set({ layoutDirection }),
 }));

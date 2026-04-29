@@ -99,8 +99,8 @@ export const api = {
       body: JSON.stringify({ sort_order }),
     }),
 
-  layoutProject: (id: string) =>
-    request<Node[]>(`/projects/${id}/layout`, { method: 'POST' }),
+  layoutProject: (id: string, direction?: string) =>
+    request<Node[]>(`/projects/${id}/layout${direction ? `?direction=${direction}` : ''}`, { method: 'POST' }),
 
   // Edges
   createEdge: (body: CreateEdgeBody) =>

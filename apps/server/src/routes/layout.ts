@@ -11,6 +11,7 @@ const elk = new ELK();
 layout.post('/:id/layout', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
+  const direction = c.req.query('direction') || 'RIGHT';
   const db = getDb();
 
   // Verify project ownership
@@ -40,7 +41,7 @@ layout.post('/:id/layout', async (c) => {
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
-      'elk.direction': 'RIGHT',
+      'elk.direction': direction === 'DOWN' ? 'DOWN' : 'RIGHT',
       'elk.spacing.nodeNode': '24',
       'elk.layered.spacing.nodeNodeBetweenLayers': '60',
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
