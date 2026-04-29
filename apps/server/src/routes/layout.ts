@@ -20,11 +20,11 @@ layout.post('/:id/layout', async (c) => {
   const nodes = db.prepare('SELECT * FROM nodes WHERE project_id = ?').all(projectId) as Node[];
   if (nodes.length === 0) return c.json([]);
 
-  // Use compact node size — ignore actual text length so layout stays tight
+  // Node size tuned for Chinese text readability
   const elkNodes = nodes.map((n) => ({
     id: n.id,
-    width: 120,
-    height: 36,
+    width: 220,
+    height: 48,
   }));
 
   const elkEdges = nodes
@@ -41,8 +41,8 @@ layout.post('/:id/layout', async (c) => {
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
-      'elk.spacing.nodeNode': '40',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
+      'elk.spacing.nodeNode': '24',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '60',
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
       'elk.edgeRouting': 'ORTHOGONAL',
       'elk.nodePlacement.strategy': 'BRANDES_KOEPF',

@@ -112,9 +112,9 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
 
   return (
     <div
-      className={`px-3 py-2 rounded-lg border-2 max-w-[280px] transition-all duration-200 ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''} ${data.filteredOut ? 'opacity-20' : ''} ${searchClass}`}
+      className={`px-3 py-2 rounded-lg border-2 max-w-[280px] min-w-[160px] transition-all duration-200 ${statusColors[data.status]} ${data.isSelected ? 'ring-2 ring-blue-400' : ''} ${data.filteredOut ? 'opacity-20' : ''} ${searchClass}`}
     >
-      <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
+      <Handle type="target" position={Position.Top} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
 
       {/* Top row: badges */}
       {(showPriority || showTypeIcon || showDueDate) && (
@@ -175,7 +175,7 @@ function TaskNodeComponent({ data, id }: TaskNodeProps) {
         </button>
       )}
 
-      <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
+      <Handle type="source" position={Position.Bottom} className="!bg-gray-600 !w-2 !h-2" isConnectable={false} />
     </div>
   );
 }

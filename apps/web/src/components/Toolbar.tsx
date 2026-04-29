@@ -39,7 +39,7 @@ export default function Toolbar() {
     const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
     if (!viewport) return;
     try {
-      const dataUrl = await toPng(viewport, { backgroundColor: '#111827' });
+      const dataUrl = await toPng(viewport, { backgroundColor: '#111827', pixelRatio: 3 });
       const link = document.createElement('a');
       link.download = `${currentProject?.name || 'tasktree'}.png`;
       link.href = dataUrl;
@@ -139,6 +139,13 @@ export default function Toolbar() {
         <FilterBar />
         <div className="h-4 w-px bg-gray-700" />
         <ViewSwitcher />
+        <div className="flex-1" />
+        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+          <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-green-500" /> Done</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-yellow-500" /> Active</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-gray-500" /> Pending</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-red-500" /> Dropped</span>
+        </div>
       </div>
     </div>
   );
